@@ -561,17 +561,6 @@ local function exit_void()
 end
 ```
 
-## AFK Farm ([afk_farm_gui.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da%20hood/lua/scripts/afk_farm_gui.lua))
-
-### FireTouchInterest for Remote Touch
-Simulate touch events on parts without physical presence.
-```lua
-local part = workspace.Main.Plots.PlotName.AFKPart
-firetouchinterest(part, humanoidRootPart, 0) -- Touch start
-task.wait()
-firetouchinterest(part, humanoidRootPart, 1) -- Touch end
-```
-
 ## Math VFX System ([MathVFX_Addon_AllTargets.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da%20hood/lua/scripts/MathVFX_Addon_AllTargets.lua))
 
 ### Billboard Symbol Spawning
