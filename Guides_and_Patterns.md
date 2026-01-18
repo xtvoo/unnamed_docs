@@ -5179,3 +5179,67 @@ local function whitelistPlayer(player)
     end
 end
 ```
+
+
+## Advanced Combat Patterns (Verified)
+
+### Manual Resolver Logic
+Instead of relying solely on the API's default resolver, you can implement custom tracking logic to handle desync and prediction more accurately.
+
+**Key Mechanics:**
+1.  **History Tracking**: Store the last N positions and timestamps of a target.
+2.  **Velocity/Acceleration Calculation**: Manually calculate derivatives using DeltaTime (`dt`).
+3.  **Desync Detection**: Compare `CurrentPosition` vs `PredictedPosition`. If the error exceeds a threshold, apply a correction offset.
+
+```lua
+-- Example: Manual Velocity Calculation
+local function calculateVelocity(history)
+    if #history < 2 then return Vector3.zero end
+    local new, old = history[#history], history[1]
+    local dt = new.time - old.time
+    if dt < 0.001 then return Vector3.zero end
+    return (new.pos - old.pos) / dt
+end
+```
+
+### Geometric Strafing
+Generate complex movement patterns (Orbit, Square, Triangle) using trigonometric offsets relative to the target.
+
+```lua
+-- Example: Orbit Pattern
+local function getOrbitPosition(targetPos, radius, angle)
+    local x = math.cos(angle) * radius
+    local z = math.sin(angle) * radius
+    return targetPos + Vector3.new(x, 0, z)
+end
+```
+
+## Physics Manipulation Patterns (Verified)
+
+### Network Ownership "Glue"
+To force an object to stick to a player with perfect synchronization, you can manipulate hidden properties to tie their physics updates together.
+
+**Method:**
+```lua
+-- "Glue" an object's physics root to a target part
+pcall(function()
+    sethiddenproperty(object, "PhysicsRepRootPart", target_hrp)
+end)
+```
+*Note: This is an advanced logical exploit and may be patched or risky.*
+
+### Projectile Teleportation (Grenade TP)
+To convert a physics-based projectile (like a Grenade) into a guided missile:
+
+1.  **Claim Ownership**: `sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)`
+2.  **Strip Physics**: Destroy `BodyMover`s and `Constraint`s. Set `CanCollide` and `CanTouch` to false.
+3.  **Fix Mass**: Set `CustomPhysicalProperties` to low density (e.g., 0.01) to prevent sluggishness.
+4.  **Guide**: Use a `BodyPosition` with extremely high `P` (Power) and `D` (Damping) to snap it to the target.
+
+### Accessory State Manipulation
+For "fling" or "attaching" behavior, you can manipulate the internal state of accessories.
+
+```lua
+-- Reset/Desync Accessory State
+sethiddenproperty(accessoryPart, "BackendAccoutrementState", 4) -- Force state
+```
