@@ -5065,3 +5065,74 @@ end
 
 
 
+
+## Kitten Saver Protector ([haydens kitten saver 900.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da hood/lua/scripts/haydens%20kitten%20saver%20900.lua))
+
+### Automated protection system that manages ragebot state based on threats.
+```lua
+local function refreshRagebot(stop_reason)
+    safe_call(function()
+        local rb_targets = api:get_ui_object("ragebot_targets")
+        local rb_enabled = api:get_ui_object("ragebot_enabled")
+        local rb_flame = api:get_ui_object("ragebot_flame")
+        local rb_kill_nearby = api:get_ui_object("ragebot_kill_nearby")
+        local use_flame = api:get_ui_object("protector_use_flame")
+        local threats = {}
+        local last_attacker = ""
+        for name, _ in pairs(active_threats) do
+            local p = Players:FindFirstChild(name)
+            if p and p.Parent and p.Character then table.insert(threats, name) last_attacker = name
+            else active_threats[name] = nil end
+        end
+        if #threats > 0 and not stomp_connection then
+            saveState()
+            if rb_targets then pcall(function() rb_targets:SetValue(threats) rb_targets:SetValue(last_attacker) end)
+... (truncated)
+```
+
+
+## Protector Follow System ([haydens kitten saver 900.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da hood/lua/scripts/haydens%20kitten%20saver%20900.lua))
+
+### Follows the owner with a configurable offset using hidden properties.
+```lua
+follow_connection = RunService.Heartbeat:Connect(function()
+    safe_call(function()
+        local active_obj = api:get_ui_object("protector_active")
+        local follow_obj = api:get_ui_object("protector_follow_owner")
+        local targets_obj = api:get_ui_object("protector_targets")
+        
+        local should_follow = active_obj and active_obj.Value and follow_obj and follow_obj.Value
+        
+        -- Don't follow if we are fighting
+        if next(active_threats) ~= nil or stomp_connection then should_follow = false end
+
+        if not should_follow then
+            if was_following then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                     pcall(function() sethiddenproperty(LocalPlayer.Character.HumanoidRootPart, "PhysicsRepRootPart", nil) end)
+... (truncated)
+```
+
+
+## Quantum Strafe Pattern ([hvh_helper.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da hood/lua/scripts/hvh_helper.lua))
+
+### Randomized micro-teleports for HvH.
+```lua
+local function pattern_quantum(r, ang)
+    -- Random micro-teleports within radius
+    local jitterX = (math.random() - 0.5) * r * 0.5
+    local jitterZ = (math.random() - 0.5) * r * 0.5
+    local baseX = r * math.cos(ang)
+    local baseZ = r * math.sin(ang)
+    return Vector3.new(baseX + jitterX, 0, baseZ + jitterZ)
+end
+```
+
+
+## Resolver Prediction Logic ([hvh_helper.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da hood/lua/scripts/hvh_helper.lua))
+
+### Predicts target position using velocity, acceleration, and adaptive multipliers.
+```lua
+local function resolvePosition(part, origin, now, dt)
+    if not V(resolver_enable, true) or not part then return origin end
+```
