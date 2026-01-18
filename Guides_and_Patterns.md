@@ -5243,3 +5243,50 @@ For "fling" or "attaching" behavior, you can manipulate the internal state of ac
 -- Reset/Desync Accessory State
 sethiddenproperty(accessoryPart, "BackendAccoutrementState", 4) -- Force state
 ```
+
+
+## Hidden Property Manipulation (Verified)
+
+The `sethiddenproperty` function is a powerful tool for manipulating internal engine states that are not accessible via standard Lua properties.
+
+### Common Targets
+
+#### 1. Simulation Radius (Network Ownership)
+To claim network ownership of unanchored parts (like grenades, money, or debris), you must maximize your simulation radius.
+```lua
+settings().Physics.AllowSleep = false
+sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
+sethiddenproperty(game.Players.LocalPlayer, "MaxSimulationRadius", math.huge)
+```
+
+#### 2. Part Physics Sleep
+Prevent parts from "falling asleep" (stopping physics calculations) to ensure they respond to BodyMovers.
+```lua
+sethiddenproperty(part, "NetworkIsSleeping", false)
+```
+
+#### 3. Accessory State
+Useful for "fling" scripts or manipulating character attachments.
+```lua
+sethiddenproperty(accessory, "BackendAccoutrementState", 0) -- 0 = Default, 4 = Physics
+```
+
+---
+
+## Known Crash Methods & Anomalies
+
+### The "Flamehack Bag" Crash
+**Severity**: High (Server Crash)
+**Trigger**: Interaction Clash
+
+**Description**:
+A verifiable server crash occurs under specific conditions involving the "Flamehack" exploit script and the "Bag" (kidnap) mechanic.
+
+**Steps to Reproduce (WARNING):**
+1.  Target User A is running **Flamehack** (specifically the flying/speed component).
+2.  User B attempts to **Bag** (grab/kidnap) Target User A.
+3.  **Result**: The conflicting physics/attachment states between the Flamehack script and the server-side Bag script cause an unhandled exception in the physics engine, leading to an immediate server crash for all players.
+
+**Mitigation**:
+*   Do not attempt to bag players who are visibly using Flamehack or flying erratically.
+*   Anti-Crash scripts cannot prevent this as it is a server-side physics replication failure.
