@@ -947,36 +947,7 @@ if lockEnabled then
 end
 ```
 
-## Auto Rebirth ([AutoRebirth_RunWay.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da%20hood/lua/scripts/AutoRebirth_RunWay.lua))
 
-### Remote Rebirth Firing
-Auto-fire rebirth remotes.
-```lua
-pcall(function()
-    ReplicatedStorage.Remotes.RebirthEvent:FireServer()
-end)
-```
-
-### Runway Touch Simulation
-Simulate touching runway walls.
-```lua
-local wall = workspace.RunWay.Section100.Wall
-if wall:FindFirstChild("TouchInterest") then
-    firetouchinterest(hrp, wall, 0) -- Start
-    firetouchinterest(hrp, wall, 1) -- End
-end
-```
-
-### Loop Bring All Players
-Bring all other players to your location.
-```lua
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer and player.Character then
-        local targetCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-        player.Character.HumanoidRootPart.CFrame = targetCFrame
-    end
-end
-```
 
 ### Custom Draggable GUI with syn.protect_gui
 Protect UI from detection and make draggable.
