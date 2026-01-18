@@ -5136,3 +5136,86 @@ end
 local function resolvePosition(part, origin, now, dt)
     if not V(resolver_enable, true) or not part then return origin end
 ```
+
+
+## Whitelisting: Crew Check
+
+### Prevent friendly fire by checking if a target belongs to the same in-game Crew.
+```lua
+-- Check if a player is in the same crew as LocalPlayer
+local function isInCrew(p)
+    if not p then return false end
+    local myData = LocalPlayer:FindFirstChild("DataFolder")
+    local theirData = p:FindFirstChild("DataFolder")
+    
+    if myData and theirData then
+        local myCrew = myData:FindFirstChild("Information") and myData.Information:FindFirstChild("Crew")
+        local theirCrew = theirData:FindFirstChild("Information") and theirData.Information:FindFirstChild("Crew")
+        
+        if myCrew and theirCrew and myCrew.Value ~= "" and myCrew.Value == theirCrew.Value then
+            return true
+        end
+    end
+    return false
+end
+```
+
+
+## Whitelisting: Comprehensive Check
+
+### A unified function to check allowlists via Username, Format, Friends, and Crew.
+```lua
+-- Robust Whitelist Check (Usernames & Display Names)
+local Whitelist = {
+    ["Username1"] = true,
+    ["Display Name (@Username)"] = true
+}
+
+local function isWhitelisted(player)
+    -- 1. Check direct username match
+    if Whitelist[player.Name] then return true end
+    
+    -- 2. Check formatted name match
+    local formatted = string.format("%s (@%s)", player.DisplayName, player.Name)
+    if Whitelist[formatted] then return true end
+    
+    -- 3. Check friends
+    if player:IsFriendsWith(LocalPlayer.UserId) then return true end
+    
+    -- 4. Check Crew (using function above)
+    if isInCrew(player) then return true end
+    
+    return false
+end
+```
+
+
+## Whitelisting: UI Synchronization
+
+### Syncs a custom whitelist dropdown with the main scripting API's native whitelist object.
+```lua
+-- Sync UI Whitelist selections to internal table
+local function SyncWhitelist()
+    local raw_names = {}
+    local whitelist_ui = api:get_ui_object("protector_whitelist") -- Dropdown
+    
+    if whitelist_ui and whitelist_ui.Value then 
+        for formatted_name, enabled in pairs(whitelist_ui.Value) do 
+            if enabled then
+                -- Extract Username from "Display (@Name)"
+                local username = formatted_name:match("@([^%)]+)") or formatted_name
+                raw_names[username] = true
+            end
+        end
+    end
+    
+    -- Also sync with Ragebot's native whitelist if available
+    local rb_whitelist = api:get_ui_object("ragebot_whitelist")
+    if rb_whitelist then
+        -- Convert dictionary to array for some UI libs
+        local array_list = {}
+        for name, _ in pairs(raw_names) do table.insert(array_list, name) end
+        rb_whitelist:SetValue(array_list)
+    end
+end
+```
