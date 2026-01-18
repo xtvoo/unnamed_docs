@@ -5290,3 +5290,64 @@ A verifiable server crash occurs under specific conditions involving the "Flameh
 **Mitigation**:
 *   Do not attempt to bag players who are visibly using Flamehack or flying erratically.
 *   Anti-Crash scripts cannot prevent this as it is a server-side physics replication failure.
+
+
+## Comprehensive Mechanics Dump (Verified)
+
+### 1. Interaction Automation (Bagging/Stomping)
+To automate interactions like Bagging or Stomping, you must position the character relative to the target's RootPart and activate the specific tool.
+
+**Bagging Offset:**
+```lua
+-- Position yourself BEHIND the target to bag
+local offset = Vector3.new(0, -4, 0) - (targetCF.LookVector * 3)
+local bagCF = CFrame.new(targetCF.Position + offset, targetCF.Position)
+```
+
+**Stomping Offset:**
+```lua
+-- Position yourself directly ABOVE the target to stomp
+local stompCF = CFrame.new(targetRoot.Position + Vector3.new(0, 3, 0))
+```
+
+### 2. Seat Fling Mechanics
+The "Seat Fling" relies on transferring Network Ownership of an unanchored seat to the LocalPlayer.
+
+**Pattern:**
+1.  **Claim**: Teleport to seat -> `Seat:Sit(Humanoid)` -> Wait 0.2s.
+2.  **Owner**: `Seat:SetNetworkOwner(LocalPlayer)`.
+3.  **Dismount**: `Humanoid.Sit = false`.
+4.  **Fling**: Apply `BodyPosition` and `BodyThrust` (Force ~10000) to the claimed seat while controlling it via physics replication.
+
+### 3. Fake Lag / Desync
+To desync your position (appear in one place while being in another), you manipulate the physics velocity properties.
+
+**Method:**
+```lua
+-- Send huge velocity to server to freeze/glitch movement replication
+RootPart.AssemblyLinearVelocity = Vector3.new(0/0, 0/0, 0/0) -- NaN velocity
+-- OR
+RootPart.Velocity = Vector3.new(10000, 10000, 10000)
+```
+
+### 4. Character Accessory Stacking
+To attach complex models (like an "Iron Man Suit") to the character without rigging issues:
+1.  **Clone**: Clone the model into the character.
+2.  **Anchor**: Anchor all parts initially.
+3.  **Weld**: Run a RenderStepped loop to manually `CFrame` or `PivotTo` each accessory part to its corresponding limb (Head, Torso, LeftArm, etc.) using a predefined offset table.
+
+### 5. Inventory Data Scraping
+Da Hood replicates player data in a specific folder structure. You can read this to estimate another player's value.
+
+**Path:** `Player.DataFolder.Skins.Value` (JSON String)
+**Parsing:**
+```lua
+local dataFolder = TargetPlayer:WaitForChild("DataFolder", 5)
+if dataFolder then
+    local skins = dataFolder:FindFirstChild("Skins")
+    if skins then
+        local inventoryData = game:GetService("HttpService"):JSONDecode(skins.Value)
+        -- inventoryData structure: { ["Category"] = { ["SkinName"] = Quantity } }
+    end
+end
+```
