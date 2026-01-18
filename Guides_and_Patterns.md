@@ -5136,3 +5136,46 @@ end
 local function resolvePosition(part, origin, now, dt)
     if not V(resolver_enable, true) or not part then return origin end
 ```
+
+
+## Whitelisting Systems (Verified)
+
+### Programmatic Whitelist Control
+To programmatically whitelist players for the Ragebot (preventing targeting), you must interact with the specific UI object `ragebot_whitelist`.
+
+**Key Requirements:**
+1.  **UI ID**: `"ragebot_whitelist"`
+2.  **Value Format**: Dictionary with *Username* keys: `{ ["Username"] = true }`
+3.  **Read-Only Protection**: You must **Deep Copy** the existing table before modifying it, or you will receive an "attempt to modify a readonly table" error.
+
+### Implementation Pattern
+
+```lua
+local function whitelistPlayer(player)
+    local whitelist_obj = api:get_ui_object("ragebot_whitelist")
+    if not whitelist_obj then return end
+
+    -- 1. DEEP COPY existing value to bypass Read-Only protection
+    local current_val = {}
+    if whitelist_obj.Value then
+        for k, v in pairs(whitelist_obj.Value) do
+            current_val[k] = v
+        end
+    end
+
+    -- 2. Add Player using USERNAME as key
+    -- Note: Do not use "Display (@Name)" format.
+    current_val[player.Name] = true
+
+    -- 3. Set Value back to UI
+    whitelist_obj:SetValue(current_val)
+    
+    -- 4. Update Options (Dropdown List) if necessary
+    if whitelist_obj.Options or whitelist_obj.Values then
+        local current_opts = {}
+        -- Clone options...
+        -- Add player.Name to options...
+        if whitelist_obj.SetValues then whitelist_obj:SetValues(current_opts) end
+    end
+end
+```
