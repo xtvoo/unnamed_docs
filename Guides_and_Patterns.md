@@ -696,31 +696,7 @@ local function applyPadEffects()
 end
 ```
 
-## Custom Wallet UI ([Exodus_GUI.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da%20hood/lua/scripts/Exodus_GUI.lua))
 
-### Geometric Icon Drawing
-Build icons from primitive frames without images.
-```lua
-local function createHexagon(size, color, parent)
-    local container = create("Frame", {Size=UDim2.new(0, size, 0, size)})
-    local img = create("ImageLabel", {Image="rbxassetid://10626090407", ImageColor3=color})
-    -- Add cutout lines for "E" shape
-    create("Frame", {BackgroundColor3=C_BG, Size=UDim2.new(0.6,0,0,2), Position=UDim2.new(0.2,0,0.3,0), Parent=img})
-    return container
-end
-```
-
-### Gradient ColorSequence
-Apply multi-stop color gradients.
-```lua
-create("UIGradient", {
-    Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromHex("#9C8DFF")),
-        ColorSequenceKeypoint.new(1, Color3.fromHex("#6F86FF"))
-    }),
-    Parent = bar
-})
-```
 
 ## China Hat V2 ([china_hat_v2.lua](file:///C:/Users/hayde/AppData/Local/seliware-workspace/unnamed/da%20hood/lua/scripts/china_hat_v2.lua))
 
