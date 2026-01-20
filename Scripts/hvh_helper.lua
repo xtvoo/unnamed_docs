@@ -148,8 +148,8 @@ local desync_power = mainBox:AddSlider("hvh_desync_power", { Text = "Desync Powe
 
 -- VOID EXTRAS
 local voidBox = tabs.Addons:AddLeftGroupbox("Void Config")
-local void_height = voidBox:AddSlider("hvh_void_height", { Text = "Void Height", Default = 40, Min = 40, Max = 1000, Rounding = 0 })
-local void_type = voidBox:AddDropdown("hvh_void_type", { Values = {"Normal", "Stutter", "Sky"}, Default = "Normal", Multi = false, Text = "Void Type" })
+local void_type = voidBox:AddDropdown("hvh_void_type", { Values = {"NaN", "Huge"}, Default = "NaN", Multi = false, Text = "Void Type" })
+local void_height = nil
 
 -- Mapped
 local auto_stomp = glue_stomp
@@ -817,18 +817,19 @@ api:ragebot_strafe_override(function(position, unsafe, part)
         
         if state.distSpamState == "Void" then
             -- CUSTOM VOID LOGIC
-            local height = V(void_height, 40)
-            local vType = V(void_type, "Normal")
-            local yOffset = -height
+            -- CUSTOM VOID LOGIC (NaN)
+            local vType = V(void_type, "NaN")
             
-            if vType == "Sky" then
-                yOffset = height -- Go UP instead
-            elseif vType == "Stutter" then
-                -- Flicker between Height and 0
-                if math.random() > 0.5 then yOffset = 0 end
+            if vType == "Huge" then
+                local huge = 9e18
+                local v3 = Vector3.new(huge, huge, huge)
+                return CFrame.new(v3), v3
+            else
+                -- NaN Default
+                local nan = (0/0)
+                local v3 = Vector3.new(nan, nan, nan)
+                return CFrame.new(v3), v3
             end
-            
-            return CFrame.new(part.Position + Vector3.new(0, yOffset, 0)), part.Position + Vector3.new(0, yOffset, 0)
         end
     end
 
