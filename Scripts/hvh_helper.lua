@@ -33,6 +33,8 @@ local state = {
     lastBlink = 0,
     distSpamState = "Strafe", -- "Strafe" or "Void"
     lastDistSpamSwitch = 0,
+    whitelist = {}, -- UserIDs or Names
+    killConfirmActive = false,
 }
 
 
@@ -129,6 +131,14 @@ local audioBox = tabs.Addons:AddRightGroupbox("Audio")
 local hit_sound_enable = audioBox:AddToggle("hvh_hitsound", { Text = "Hit Sound", Default = false })
 local hit_sound_id = audioBox:AddInput("hvh_sound_id", { Default = "4815416295", Numeric = true, Finished = false, Text = "Sound ID" })
 local hit_sound_vol = audioBox:AddSlider("hvh_sound_vol", { Text = "Volume", Default = 1, Min = 0.1, Max = 10, Rounding = 1 })
+
+-- Ragebot Extras
+local rageBox = tabs.Main:AddLeftGroupbox("Ragebot Extras")
+local kill_confirm = rageBox:AddToggle("hvh_kill_confirm", { Text = "Kill Confirm", Default = false })
+local silent_offset = rageBox:AddToggle("hvh_silent_offset", { Text = "Silent Offset", Default = false })
+local silent_x = rageBox:AddSlider("hvh_silent_x", { Text = "Off X", Default = 0, Min = -10, Max = 10, Rounding = 1 })
+local silent_y = rageBox:AddSlider("hvh_silent_y", { Text = "Off Y", Default = 0, Min = -10, Max = 10, Rounding = 1 })
+local silent_z = rageBox:AddSlider("hvh_silent_z", { Text = "Off Z", Default = 0, Min = -10, Max = 10, Rounding = 1 })
 
 -- Safety Extra
 local anti_lock = mainBox:AddToggle("hvh_antilock", { Text = "Anti-Lock (Random Vel)", Default = false })
@@ -662,7 +672,14 @@ end
 
 -- ==================== ANTI-AIM PROTECTION ====================
 
+local function isWhitelisted(p)
+    if not p then return false end
+    if state.whitelist[p.Name] or state.whitelist[p.UserId] then return true end
+    return false
+end
+
 local function isAimingAtMe(p)
+     if isWhitelisted(p) then return false end
     if not V(antiaim_enable, true) then return false end
     if not p or not p.Character then return false end
     if p == LocalPlayer then return false end
@@ -845,6 +862,12 @@ api:ragebot_strafe_override(function(position, unsafe, part)
     
     -- Create facing CFrame
     local shootPos = resolvedOrigin
+    
+    -- Silent Aim Offset (Manipulate Origin)
+    if V(silent_offset, false) then
+        shootPos = shootPos + Vector3.new(V(silent_x, 0), V(silent_y, 0), V(silent_z, 0))
+    end
+    
     local result = face(shootPos, finalPos)
     
     -- Update debug state
@@ -1024,6 +1047,19 @@ local antiAimConn = RunService.Heartbeat:Connect(function()
             pcall(function() api:set_target(hrp) end)
         end
     end
+    
+    -- KILL CONFIRM
+    if V(kill_confirm, false) then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and isKnocked(p) and not isDead(p) and not isWhitelisted(p) then
+                local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                     pcall(function() api:set_target(hrp) end) -- Force aim at down
+                     break -- Focus one at a time
+                end
+            end
+        end
+    end
 
     -- ANTI-LOCK LOGIC
     if V(anti_lock, false) then
@@ -1078,5 +1114,33 @@ api:on_event("unload", function()
     api:notify("HvH Helper Unloaded", 2)
 end)
 
-api:notify("🔥 HvH Helper v1.1 Loaded! (Debug Mode Available)", 3)
+    api:notify("HvH Helper Unloaded", 2)
+end)
+
+-- Chat Commands
+LocalPlayer.Chatted:Connect(function(msg)
+    local args = msg:split(" ")
+    local cmd = args[1]:lower()
+    if cmd == ":w" and args[2] then
+        -- Simple name match
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower():sub(1, #args[2]) == args[2]:lower() then
+                state.whitelist[p.Name] = true
+                api:notify("Whitelisted: " .. p.Name, 2)
+            end
+        end
+    elseif cmd == ":uw" and args[2] then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Name:lower():sub(1, #args[2]) == args[2]:lower() then
+                state.whitelist[p.Name] = nil
+                api:notify("Removed: " .. p.Name, 2)
+            end
+        end
+    elseif cmd == ":clearw" then
+        state.whitelist = {}
+        api:notify("Whitelist Cleared", 2)
+    end
+end)
+
+api:notify("🔥 HvH Helper v1.2 Loaded! (Rage+)", 3)
 
