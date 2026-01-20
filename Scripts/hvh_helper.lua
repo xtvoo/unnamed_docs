@@ -143,7 +143,13 @@ local silent_y = rageBox:AddSlider("hvh_silent_y", { Text = "Off Y", Default = 0
 local silent_z = rageBox:AddSlider("hvh_silent_z", { Text = "Off Z", Default = 0, Min = -10, Max = 10, Rounding = 1 })
 
 -- Safety Extra
-local anti_lock = mainBox:AddToggle("hvh_antilock", { Text = "Anti-Lock (Random Vel)", Default = false })
+local desync_mode = mainBox:AddDropdown("hvh_desync", { Values = {"None", "Velocity", "CFrame", "Stop"}, Default = "Velocity", Multi = false, Text = "Desync Mode" })
+local desync_power = mainBox:AddSlider("hvh_desync_power", { Text = "Desync Power", Default = 500, Min = 100, Max = 10000, Rounding = 0 })
+
+-- VOID EXTRAS
+local voidBox = tabs.Addons:AddLeftGroupbox("Void Config")
+local void_height = voidBox:AddSlider("hvh_void_height", { Text = "Void Height", Default = 40, Min = 40, Max = 1000, Rounding = 0 })
+local void_type = voidBox:AddDropdown("hvh_void_type", { Values = {"Normal", "Stutter", "Sky"}, Default = "Normal", Multi = false, Text = "Void Type" })
 
 -- Mapped
 local auto_stomp = glue_stomp
@@ -152,6 +158,7 @@ local auto_void_dur = nil
 local auto_confirm = nil
 local vis_chams = fake_chams
 local vis_tracers = nil
+local anti_lock = nil -- Superseded by desync_mode
 
 
 -- ==================== DEBUG DRAWING ====================
@@ -809,8 +816,19 @@ api:ragebot_strafe_override(function(position, unsafe, part)
         end
         
         if state.distSpamState == "Void" then
-            -- Force void position (-40 Y)
-            return CFrame.new(part.Position + Vector3.new(0, -40, 0)), part.Position + Vector3.new(0, -40, 0)
+            -- CUSTOM VOID LOGIC
+            local height = V(void_height, 40)
+            local vType = V(void_type, "Normal")
+            local yOffset = -height
+            
+            if vType == "Sky" then
+                yOffset = height -- Go UP instead
+            elseif vType == "Stutter" then
+                -- Flicker between Height and 0
+                if math.random() > 0.5 then yOffset = 0 end
+            end
+            
+            return CFrame.new(part.Position + Vector3.new(0, yOffset, 0)), part.Position + Vector3.new(0, yOffset, 0)
         end
     end
 
@@ -1072,22 +1090,33 @@ local antiAimConn = RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ANTI-LOCK LOGIC
-    if V(anti_lock, false) then
+    -- ADVANCED DESYNC LOGIC
+    local dMode = V(desync_mode, "Velocity")
+    if dMode ~= "None" then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
-            -- Random high velocity to break tracking
-            hrp.Velocity = Vector3.new(
-                math.random(-500, 500),
-                math.random(-500, 500),
-                math.random(-500, 500)
-            )
-            -- Jitter CFrame Slightly
-            hrp.CFrame = hrp.CFrame * CFrame.new(
-                math.random() * 0.5, 
-                math.random() * 0.5, 
-                math.random() * 0.5
-            )
+            local power = V(desync_power, 500)
+            
+            if dMode == "Velocity" then
+                -- Random high velocity
+                hrp.Velocity = Vector3.new(
+                    math.random(-power, power),
+                    math.random(-power, power),
+                    math.random(-power, power)
+                )
+            elseif dMode == "Stop" then
+                -- Force zero velocity (Freeze)
+                hrp.Velocity = Vector3.zero
+                -- Jitter CFrame slightly to prevent sleep
+                hrp.CFrame = hrp.CFrame * CFrame.new(0, math.sin(os.clock()*10)*0.1, 0)
+            elseif dMode == "CFrame" then
+                -- Micro-Teleport Jitter
+                hrp.CFrame = hrp.CFrame * CFrame.new(
+                    (math.random()-0.5) * (power/100), 
+                    (math.random()-0.5) * (power/100), 
+                    (math.random()-0.5) * (power/100)
+                )
+            end
         end
     end
 end)
