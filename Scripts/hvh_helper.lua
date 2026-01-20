@@ -148,7 +148,14 @@ local desync_power = mainBox:AddSlider("hvh_desync_power", { Text = "Desync Powe
 
 -- VOID EXTRAS
 local voidBox = tabs.Addons:AddLeftGroupbox("Void Config")
-local void_type = voidBox:AddDropdown("hvh_void_type", { Values = {"NaN", "Huge"}, Default = "NaN", Multi = false, Text = "Void Type" })
+local void_type = voidBox:AddDropdown("hvh_void_type", { 
+    Values = {
+        "NaN", "Huge", "Negative Huge", "Vertical Max", "Horizontal Max", 
+        "Far Lands", "Safe Zone", "Random Huge", "X-Extreme", "Z-Extreme",
+        "Corner Gigantic", "Inverse NaN", "Null", "Jitter Huge"
+    }, 
+    Default = "Huge", Multi = false, Text = "Void Type" 
+})
 local void_height = nil
 
 -- Mapped
@@ -816,20 +823,33 @@ api:ragebot_strafe_override(function(position, unsafe, part)
         end
         
         if state.distSpamState == "Void" then
-            -- CUSTOM VOID LOGIC
-            -- CUSTOM VOID LOGIC (NaN)
-            local vType = V(void_type, "NaN")
+            -- CUSTOM VOID LOGIC (Extreme Library)
+            local vType = V(void_type, "Huge")
+            local huge = 9e18
+            local nan = (0/0)
             
-            if vType == "Huge" then
-                local huge = 9e18
-                local v3 = Vector3.new(huge, huge, huge)
-                return CFrame.new(v3), v3
-            else
-                -- NaN Default
-                local nan = (0/0)
-                local v3 = Vector3.new(nan, nan, nan)
-                return CFrame.new(v3), v3
+            local vec = Vector3.new(huge, huge, huge) -- Default
+            
+            if vType == "NaN" then vec = Vector3.new(nan, nan, nan)
+            elseif vType == "Huge" then vec = Vector3.new(huge, huge, huge)
+            elseif vType == "Negative Huge" then vec = Vector3.new(-huge, -huge, -huge)
+            elseif vType == "Vertical Max" then vec = Vector3.new(0, huge, 0)
+            elseif vType == "Horizontal Max" then vec = Vector3.new(huge, 0, huge)
+            elseif vType == "Far Lands" then vec = Vector3.new(12500000, 5000, 12500000) -- Approx Roblox Far Lands
+            elseif vType == "Safe Zone" then vec = Vector3.new(0, 100000, 0)
+            elseif vType == "Random Huge" then 
+                local r = math.random() > 0.5 and huge or -huge
+                vec = Vector3.new(r, r, r)
+            elseif vType == "X-Extreme" then vec = Vector3.new(huge, 0, 0)
+            elseif vType == "Z-Extreme" then vec = Vector3.new(0, 0, huge)
+            elseif vType == "Corner Gigantic" then vec = Vector3.new(huge, -500, huge)
+            elseif vType == "Inverse NaN" then vec = Vector3.new(-nan, -nan, -nan)
+            elseif vType == "Null" then vec = Vector3.new(nan, huge, nan)
+            elseif vType == "Jitter Huge" then
+                if math.random() > 0.5 then vec = Vector3.new(huge, huge, huge) else vec = Vector3.new(-huge, -huge, -huge) end
             end
+            
+            return CFrame.new(vec), vec
         end
     end
 
