@@ -41,6 +41,7 @@ local state = {
 -- ==================== UI SETUP ====================
 local tabs = {
     Main = api:GetTab("Main") or api:AddTab("Main"),
+    Visuals = api:GetTab("Visuals") or api:AddTab("Visuals"),
     Addons = api:GetTab("Addons") or api:AddTab("Addons")
 }
 
@@ -103,6 +104,8 @@ local manual_right = manualBox:AddLabel("Right: C")
 local debugBox = tabs.Addons:AddLeftGroupbox("Debug")
 local debug_enable = debugBox:AddToggle("hvh_debug", { Text = "Enable Debug", Default = false })
 local debug_strafe = debugBox:AddToggle("hvh_debug_strafe", { Text = "Show Strafe Path", Default = true })
+local debug_resolver = debugBox:AddToggle("hvh_debug_resolver", { Text = "Show Resolver", Default = true })
+local debug_aimers = debugBox:AddToggle("hvh_debug_aimers", { Text = "Show Aimers", Default = true })
 local debug_stats = debugBox:AddToggle("hvh_debug_stats", { Text = "Show Stats HUD", Default = true })
 
 -- MAPPING VARIABLES FOR COMPATIBILITY
@@ -143,13 +146,22 @@ local silent_z = rageBox:AddSlider("hvh_silent_z", { Text = "Off Z", Default = 0
 -- Safety Extra
 local anti_lock = mainBox:AddToggle("hvh_antilock", { Text = "Anti-Lock (Random Vel)", Default = false })
 
+-- VISUALS TAB
+local espBox = tabs.Visuals:AddLeftGroupbox("ESP")
+local vis_tracers = espBox:AddToggle("hvh_vis_tracers", { Text = "Tracers", Default = false })
+local vis_skeleton = espBox:AddToggle("hvh_vis_skeleton", { Text = "Skeleton ESP", Default = false })
+local vis_chams = espBox:AddToggle("hvh_vis_chams", { Text = "Chams", Default = true })
+
+-- AUTOMATION (Addons)
+local autoBox = tabs.Addons:AddRightGroupbox("Automation")
+local auto_buy = autoBox:AddToggle("hvh_autobuy", { Text = "Auto Buy (DH)", Default = false })
+local trash_talk = autoBox:AddToggle("hvh_trashtalk", { Text = "Trash Talker", Default = false })
+
 -- Mapped
 local auto_stomp = glue_stomp
 local auto_void = nil
 local auto_void_dur = nil
 local auto_confirm = nil
-local vis_chams = fake_chams
-local vis_tracers = nil
 
 
 -- ==================== DEBUG DRAWING ====================
@@ -189,6 +201,15 @@ local function createText(name, size, color)
     debugDrawings[name] = text
     return text
 end
+
+-- Skeleton Connections
+local skeletonBones = {
+    {"Head", "Neck"}, {"Neck", "UpperTorso"}, {"UpperTorso", "LowerTorso"}, {"LowerTorso", "LeftUpperLeg"},
+    {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"}, {"LowerTorso", "RightUpperLeg"},
+    {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}, {"UpperTorso", "LeftUpperArm"},
+    {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"}, {"UpperTorso", "RightUpperArm"},
+    {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"}
+}
 
 -- Create debug drawings
 local strafePath = {}
@@ -983,6 +1004,44 @@ local debugConn = RunService.RenderStepped:Connect(function()
         for i = 1, 10 do aimerCircles[i].Visible = false end
     end
     
+    -- TRACERS & SKELETON
+    if V(vis_tracers, false) or V(vis_skeleton, false) then
+        for i, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Head") then
+                -- Tracers
+                if V(vis_tracers, false) then
+                    local lineName = "tracer_" .. p.Name
+                    local screenPos, onScreen = worldToScreen(p.Character.HumanoidRootPart.Position)
+                    local myPos, myOn = worldToScreen(LocalPlayer.Character.HumanoidRootPart.Position) -- Or mouse pos
+                    if onScreen then
+                        local line = createLine(lineName, Color3.new(1,0,0), 1)
+                        line.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y) -- Bottom middle
+                        line.To = screenPos
+                        line.Visible = true
+                    end
+                end
+
+                -- Skeleton
+                if V(vis_skeleton, false) then
+                     for j, bone in ipairs(skeletonBones) do
+                        local p1 = p.Character:FindFirstChild(bone[1])
+                        local p2 = p.Character:FindFirstChild(bone[2])
+                        if p1 and p2 then
+                            local s1, o1 = worldToScreen(p1.Position)
+                            local s2, o2 = worldToScreen(p2.Position)
+                            if o1 or o2 then
+                                local skelLine = createLine("skel_"..p.Name..j, Color3.new(1,1,1), 1)
+                                skelLine.From = s1
+                                skelLine.To = s2
+                                skelLine.Visible = true
+                            end
+                        end
+                     end
+                end
+            end
+        end
+    end
+
     -- Stats HUD
     if V(debug_stats, true) then
         local total = state.hitCount + state.missCount
@@ -1098,12 +1157,32 @@ api:on_event("localplayer_hit_player", function(target, part, dmg, weapon, origi
     end
 end)
 
--- Kill tracking for auto-void
+-- Kill tracking for auto-void & Trash Talk
 api:on_event("player_died", function(player)
     if player ~= LocalPlayer then
         state.lastKillTime = os.clock()
         if V(auto_void, false) then
             autoVoid()
+        end
+        
+        if V(trash_talk, false) then
+            local msgs = {"sit", "1", "ez", "unnamed on top", "fan?", "is that ur main?", "quit", "bad"}
+            local msg = msgs[math.random(1, #msgs)]
+            MainEvent:FireServer("SayMessageRequest", msg, "All")
+        end
+    end
+end)
+
+-- Auto Buy
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if V(auto_buy, false) then
+        task.wait(1)
+        local buyItems = {
+            "[Double-Barrel SG]", "[Revolver]", "[TacticalShotgun]", "[Ammo] [Double-Barrel SG]", "[Ammo] [Revolver]", "[Chicken]", "[High-Medium Armor]"
+        }
+        for _, item in ipairs(buyItems) do
+            MainEvent:FireServer("Buy", item)
+            task.wait(0.1)
         end
     end
 end)
