@@ -215,6 +215,24 @@ local skeletonBones = {
     {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"}
 }
 
+-- ==================== VOID METHODS ====================
+local VoidMethods = {
+    ["NaN"] = function() local n = 0/0 return Vector3.new(n,n,n) end,
+    ["Huge"] = function() local h = 9e18 return Vector3.new(h,h,h) end,
+    ["Negative Huge"] = function() local h = -9e18 return Vector3.new(h,h,h) end,
+    ["Vertical Max"] = function() local h = 9e18 return Vector3.new(0,h,0) end,
+    ["Horizontal Max"] = function() local h = 9e18 return Vector3.new(h,0,h) end,
+    ["Far Lands"] = function() local f = 12500000 return Vector3.new(f, 5000, f) end,
+    ["Safe Zone"] = function() return Vector3.new(0, 100000, 0) end,
+    ["Random Huge"] = function() local r = math.random() > 0.5 and 9e18 or -9e18 return Vector3.new(r,r,r) end,
+    ["X-Extreme"] = function() return Vector3.new(9e18, 0, 0) end,
+    ["Z-Extreme"] = function() return Vector3.new(0, 0, 9e18) end,
+    ["Corner Gigantic"] = function() local h = 9e18 return Vector3.new(h, -500, h) end,
+    ["Inverse NaN"] = function() local n = -(0/0) return Vector3.new(n,n,n) end,
+    ["Null"] = function() local n, h = 0/0, 9e18 return Vector3.new(n,h,n) end,
+    ["Jitter Huge"] = function() local h = 9e18 if math.random() > 0.5 then return Vector3.new(h,h,h) else return Vector3.new(-h,-h,-h) end end
+}
+
 -- Create debug drawings
 local strafePath = {}
 for i = 1, 32 do
@@ -823,31 +841,10 @@ api:ragebot_strafe_override(function(position, unsafe, part)
         end
         
         if state.distSpamState == "Void" then
-            -- CUSTOM VOID LOGIC (Extreme Library)
+            -- CUSTOM VOID LOGIC (Method Call)
             local vType = V(void_type, "Huge")
-            local huge = 9e18
-            local nan = (0/0)
-            
-            local vec = Vector3.new(huge, huge, huge) -- Default
-            
-            if vType == "NaN" then vec = Vector3.new(nan, nan, nan)
-            elseif vType == "Huge" then vec = Vector3.new(huge, huge, huge)
-            elseif vType == "Negative Huge" then vec = Vector3.new(-huge, -huge, -huge)
-            elseif vType == "Vertical Max" then vec = Vector3.new(0, huge, 0)
-            elseif vType == "Horizontal Max" then vec = Vector3.new(huge, 0, huge)
-            elseif vType == "Far Lands" then vec = Vector3.new(12500000, 5000, 12500000) -- Approx Roblox Far Lands
-            elseif vType == "Safe Zone" then vec = Vector3.new(0, 100000, 0)
-            elseif vType == "Random Huge" then 
-                local r = math.random() > 0.5 and huge or -huge
-                vec = Vector3.new(r, r, r)
-            elseif vType == "X-Extreme" then vec = Vector3.new(huge, 0, 0)
-            elseif vType == "Z-Extreme" then vec = Vector3.new(0, 0, huge)
-            elseif vType == "Corner Gigantic" then vec = Vector3.new(huge, -500, huge)
-            elseif vType == "Inverse NaN" then vec = Vector3.new(-nan, -nan, -nan)
-            elseif vType == "Null" then vec = Vector3.new(nan, huge, nan)
-            elseif vType == "Jitter Huge" then
-                if math.random() > 0.5 then vec = Vector3.new(huge, huge, huge) else vec = Vector3.new(-huge, -huge, -huge) end
-            end
+            local method = VoidMethods[vType] or VoidMethods["Huge"]
+            local vec = method()
             
             return CFrame.new(vec), vec
         end
